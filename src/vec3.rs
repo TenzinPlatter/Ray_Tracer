@@ -5,7 +5,6 @@ pub struct Vec3 {
     e: [f64; 3],
 }
 
-
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { e: [x, y, z] }
@@ -31,11 +30,15 @@ impl Vec3 {
         println!("{r} {g} {b}")
     }
 
+    pub fn eprint(&self) {
+        eprintln!("Vec: {} {} {}", self.x(), self.y(), self.z());
+    }
+
     pub fn dot(&self, other: &Self) -> f64 {
         return 
             self.x() * other.x()
-            + self.y() + other.y()
-            + self.z() + other.z()
+            + self.y() * other.y()
+            + self.z() * other.z()
     }
 
     pub fn cross(&self, other: &Self) -> Self {
@@ -117,9 +120,9 @@ impl ops::Sub<f64> for Vec3 {
     type Output = Self;
     fn sub(self, rhs: f64) -> Self::Output {
         Vec3::new(
-            self.x() + rhs,
-            self.y() + rhs,
-            self.z() + rhs,
+            self.x() - rhs,
+            self.y() - rhs,
+            self.z() - rhs,
         )
     }
 }
@@ -139,9 +142,9 @@ impl ops::Mul<f64> for Vec3 {
     type Output = Self;
     fn mul(self, rhs: f64) -> Self::Output {
         Vec3::new(
-            self.x() + rhs,
-            self.y() + rhs,
-            self.z() + rhs,
+            self.x() * rhs,
+            self.y() * rhs,
+            self.z() * rhs,
         )
     }
 }
@@ -161,9 +164,9 @@ impl ops::Div<f64> for Vec3 {
     type Output = Self;
     fn div(self, rhs: f64) -> Self::Output {
         Vec3::new(
-            self.x() + rhs,
-            self.y() + rhs,
-            self.z() + rhs,
+            self.x() / rhs,
+            self.y() / rhs,
+            self.z() / rhs,
         )
     }
 }
