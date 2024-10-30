@@ -11,11 +11,11 @@ use ray::Ray;
 pub fn draw_sphere_on_gradient(scene: SceneContext) {
     println!("P3\n{} {}\n255", scene.width, scene.height);
 
-    let bar = ProgressBar::new((scene.height * scene.height).try_into().unwrap());
+    let bar = ProgressBar::new((scene.height * scene.height) as u64);
 
     log::info!("Scanlines remaining: ");
     for j in 0..scene.height {
-        for i in 0..scene.height {
+        for i in 0..scene.width {
             bar.inc(1);
 
             let pixel_center = scene.px00_loc
