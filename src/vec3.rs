@@ -209,7 +209,7 @@ impl ops::AddAssign<f64> for Vec3 {
 impl ops::MulAssign for Vec3 {
     fn mul_assign(&mut self, rhs: Self) {
         for i in 0..self.e.len() {
-            self[i] *= rhs[i]
+            self[i] *= rhs[i];
         }
     }
 }
@@ -217,7 +217,7 @@ impl ops::MulAssign for Vec3 {
 impl ops::MulAssign<f64> for Vec3 {
     fn mul_assign(&mut self, rhs: f64) {
         for i in 0..self.e.len() {
-            self[i] *= rhs
+            self[i] *= rhs;
         }
     }
 }
@@ -225,15 +225,15 @@ impl ops::MulAssign<f64> for Vec3 {
 impl ops::DivAssign for Vec3 {
     fn div_assign(&mut self, rhs: Self) {
         for i in 0..self.e.len() {
-            self[i] /= rhs[i]
+            self[i] /= rhs[i];
         }
     }
 }
 
 impl ops::DivAssign<f64> for Vec3 {
     fn div_assign(&mut self, rhs: f64) {
-        self.e[0] += rhs;
-        self.e[1] += rhs;
-        self.e[2] += rhs;
+        for i in 0..self.e.len() {
+            self[i] /= rhs;
+        }
     }
 }
