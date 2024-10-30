@@ -22,12 +22,16 @@ impl Vec3 {
         &self.e[2]
     }
 
-    pub fn get_color(&self) -> String {
+    pub fn get_color_256(&self) -> String {
         let r = (255.999 * self.x()).floor();
         let g = (255.999 * self.y()).floor();
         let b = (255.999 * self.z()).floor();
 
         format!("{r} {g} {b}")
+    }
+
+    pub fn get_color_1(&self) -> String {
+        format!("{} {} {}", self.x(), self.y(), self.z())
     }
 
     pub fn eprint(&self) {
