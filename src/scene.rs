@@ -12,9 +12,7 @@ pub struct SceneContext {
 }
 
 impl SceneContext {
-    pub fn new(image_width: i32, camera_center: Point3) -> SceneContext {
-        let aspect_ratio = 16. / 9.;
-
+    pub fn new(image_width: i32, aspect_ratio: f32, camera_center: Point3) -> SceneContext {
         let mut image_height: i32 = (image_width as f32 / aspect_ratio) as i32;
 
         // image must be at least 1 pixel high
@@ -27,7 +25,7 @@ impl SceneContext {
 
         // height calculated from width/height rather than aspect ratio as ratio
         // is an ideal not actual
-        let viewport_width: f64 = viewport_height * (image_width / image_height) as f64;
+        let viewport_width: f64 = viewport_height * (image_width as f64 / image_height as f64);
 
         // distance between camera and viewport on z axis
         // from camera towards viewport is -z

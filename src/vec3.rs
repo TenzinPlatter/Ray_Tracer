@@ -6,8 +6,8 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { e: [x, y, z] }
+    pub fn new<T: Into<f64>>(x: T, y: T, z: T) -> Vec3 {
+        Vec3 { e: [x.into(), y.into(), z.into()] }
     }
 
     pub fn x(&self) -> &f64 {
@@ -22,12 +22,12 @@ impl Vec3 {
         &self.e[2]
     }
 
-    pub fn write_color(&self) {
+    pub fn get_color(&self) -> String {
         let r = (255.999 * self.x()).floor();
         let g = (255.999 * self.y()).floor();
         let b = (255.999 * self.z()).floor();
 
-        println!("{r} {g} {b}")
+        format!("{r} {g} {b}")
     }
 
     pub fn eprint(&self) {

@@ -1,19 +1,27 @@
 pub mod vec3;
 pub mod ray;
 pub mod scene;
+pub mod utils;
+pub mod shapes {
+    pub mod sphere;
+}
 
 use indicatif::ProgressBar;
 
 use scene::SceneContext;
 use vec3::Vec3;
 use ray::Ray;
+use shapes::sphere;
 
-pub fn draw_sphere_on_gradient(scene: SceneContext) {
-    println!("P3\n{} {}\n255", scene.width, scene.height);
+pub fn draw_sphere_on_gradient(scene: SceneContext) -> String {
+    let mut res = String::new();
+
+    res.push_str(&format!("P3\n{} {}\n255\n", scene.width, scene.height));
 
     let bar = ProgressBar::new((scene.height * scene.height) as u64);
 
     log::info!("Scanlines remaining: ");
+
     for j in 0..scene.height {
         for i in 0..scene.width {
             bar.inc(1);
@@ -27,10 +35,12 @@ pub fn draw_sphere_on_gradient(scene: SceneContext) {
 
             let r = Ray::new(scene.camera_center, ray_direction);
 
-            r.color().write_color();
+            res.push_str(&(r.color().get_color() + "\n "));
         }
     }
 
     log::info!("\rDone.                     \r");
     bar.finish();
+
+    res
 }
