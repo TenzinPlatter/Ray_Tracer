@@ -1,10 +1,10 @@
-use crate::utils::{Hittable, HitRecord};
+use crate::hit::{Hittable, HitRecord};
 use crate::Vec3;
 use crate::Ray;
 
 type Point3 = Vec3;
 
-struct Sphere {
+pub struct Sphere {
     pub center: Point3,
     pub radius: f64,
 }
@@ -25,15 +25,13 @@ impl Sphere {
 
 impl Hittable for Sphere {
     fn hit(&self, r: &Ray, ray_tmin: f64, ray_tmax: f64) -> Option<HitRecord> {
-        let oc = self.center - r.origin;
-
         // math for this in section 6.2
-
+        let oc = self.center - r.origin;
         let a = r.direction.length_squared();
         let h = Vec3::dot(&r.direction, &oc);
-        let c = oc.length_squared() - self.radius.powi(2);
+        let c = oc.length_squared() - self.radius * self.radius;
 
-        let discriminant = h.powi(2) - a * c;
+        let discriminant = h * h - a * c;
 
         if discriminant < 0. {
             return None;
@@ -47,7 +45,7 @@ impl Hittable for Sphere {
         let mut root = (h - sqrtd) / a;
 
         fn invalid_root(tmin: f64, tmax: f64, t: f64) -> bool{
-            tmin < t && t < tmax 
+            t <= tmin || tmax <= t
         }
 
         if invalid_root(ray_tmin, ray_tmax, root) {

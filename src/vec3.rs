@@ -1,12 +1,16 @@
 use std::ops;
 
+use crate::clamp;
+
 #[derive(Copy)]
 pub struct Vec3 {
     e: [f64; 3],
 }
 
 impl Vec3 {
-    pub fn new<T: Into<f64>>(x: T, y: T, z: T) -> Vec3 {
+    pub fn new
+        <A: Into<f64>, B: Into<f64>, C: Into<f64>>
+        (x: A, y: B, z: C) -> Vec3 {
         Vec3 { e: [x.into(), y.into(), z.into()] }
     }
 
@@ -23,9 +27,9 @@ impl Vec3 {
     }
 
     pub fn get_color_256(&self) -> String {
-        let r = (255.999 * self.x()).floor();
-        let g = (255.999 * self.y()).floor();
-        let b = (255.999 * self.z()).floor();
+        let r = (256. * clamp(0, *self.x(), 0.999)).floor();
+        let g = (256. * clamp(0, *self.y(), 0.999)).floor();
+        let b = (256. * clamp(0, *self.z(), 0.999)).floor();
 
         format!("{r} {g} {b}")
     }
@@ -34,8 +38,8 @@ impl Vec3 {
         format!("{} {} {}", self.x(), self.y(), self.z())
     }
 
-    pub fn eprint(&self) {
-        eprintln!("Vec: {} {} {}", self.x(), self.y(), self.z());
+    pub fn print(&self) {
+        println!("Vec: {} {} {}", self.x(), self.y(), self.z());
     }
 
     pub fn dot(&self, other: &Self) -> f64 {

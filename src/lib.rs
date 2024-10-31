@@ -1,67 +1,69 @@
 pub mod vec3;
 pub mod ray;
 pub mod scene;
-pub mod utils;
+pub mod hit;
+pub mod camera;
 pub mod shapes {
     pub mod sphere;
 }
 
-use indicatif::ProgressBar;
+use core::f64;
+use rand::random;
 
-use scene::SceneContext;
 use vec3::Vec3;
 use ray::Ray;
+use hit::{Hittable, HittableList};
+use shapes::sphere::Sphere;
 
+type Point3 = Vec3;
 type Color = Vec3;
 
-pub fn draw_sphere_on_gradient(scene: SceneContext) -> String {
-    let mut res = String::new();
+pub const INFINITY: f64 = f64::INFINITY;
+pub const PI: f64 = f64::consts::PI;
 
-    res.push_str(&format!("P3\n{} {}\n255\n", scene.width, scene.height));
-
-    let bar = ProgressBar::new((scene.height * scene.height) as u64);
-
-    log::info!("Scanlines remaining: ");
-
-    for j in 0..scene.height {
-        for i in 0..scene.width {
-            bar.inc(1);
-
-            let pixel_center = scene.px00_loc
-                + scene.pixel_delta_u * i as f64
-                + scene.pixel_delta_v * j as f64;
-
-            // doesn't turn into a unit vector to avoid divisions
-            let ray_direction = pixel_center - scene.camera_center;
-
-            let r = Ray::new(scene.camera_center, ray_direction);
-
-            res.push_str(&(r.color().get_color_256() + "\n "));
-        }
-    }
-
-    log::info!("\rDone.                     \r");
-    bar.finish();
-
-    res
+/// random num 0 <= n < 1
+pub fn random_f64() -> f64 {
+    random()
 }
 
-pub fn draw_red_green_gradient(scene: SceneContext) -> String {
-    let mut res = String::new();
-    res.push_str(&format!("P3\n{} {}\n255\n", scene.width, scene.height));
+pub fn surrounds<A: Into<f64>, B: Into<f64>, C: Into<f64>>(min: A, x: B, max: C) -> bool {
+    let x = x.into();
+    let min = min.into();
+    let max = max.into();
 
-    for j in 0..scene.height {
-        for i in 0..scene.width {
-            let color = Color::new(
-                i as f32 / (scene.width - 1) as f32,
-                j as f32 / (scene.height - 1) as f32,
-                0.,
-            );
+    min < x && x < max
+}
 
-            res.push_str(&(color.get_color_256() + "\n"));
-        }
+pub fn clamp<A: Into<f64>, B: Into<f64>, C: Into<f64>>(min: A, x: B, max: C) -> f64 {
+    let x = x.into();
+    let min = min.into();
+    let max = max.into();
+
+    if x < min {
+        min
+    } else if x > max {
+        max
+    } else {
+        x
     }
+}
 
+pub fn degrees_to_radians(degrees: f64) -> f64 {
+    degrees * PI / 180.
+}
 
-    res
+pub fn radians_to_degrees(radians: f64) -> f64 {
+    radians * 180. / PI
+}
+
+/// lerp (linear blend) between two colors
+pub fn create_lerp_func(start_color: Color, end_color: Color) -> Box<dyn Fn(&Ray) -> Color> {
+    // blendedValue = (1 - a) * startValue + a * endValue
+    // Start and end value are colors
+    // a is 0 - 1
+    Box::from(move |r: &Ray| {
+        let unit_direction = r.direction.unit_vector();
+        let a = (unit_direction.y() + 1.) * 0.5;
+        start_color * (1. - a) + end_color * a
+    })
 }
