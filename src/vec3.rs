@@ -1,6 +1,10 @@
 use std::ops;
 
-use crate::clamp;
+use crate::{
+    clamp,
+    random_f64,
+    surrounds,
+};
 
 #[derive(Copy)]
 pub struct Vec3 {
@@ -12,6 +16,72 @@ impl Vec3 {
         <A: Into<f64>, B: Into<f64>, C: Into<f64>>
         (x: A, y: B, z: C) -> Vec3 {
         Vec3 { e: [x.into(), y.into(), z.into()] }
+    }
+
+    pub fn reflect(&self, surface_normal: &Vec3) -> Vec3 {
+        *self - *surface_normal * 2. * Vec3::dot(self, surface_normal)
+    }
+
+    pub fn near_zero(&self) -> bool {
+        let k = 1e-8;
+
+        self.e[0].abs() < k
+            && self.e[1].abs() < k
+            && self.e[2].abs() < k
+    }
+
+    pub fn linear_to_gamma(linear_value: f64) -> f64 {
+        if linear_value > 0. {
+            linear_value.sqrt()
+        } else {
+            0.
+        }
+    }
+
+    pub fn random() -> Vec3 {
+        Vec3::new(
+            random_f64(),
+            random_f64(),
+            random_f64(),
+        )
+    }
+
+    pub fn random_range<A: Into<f64>, B: Into<f64>>(min: A, max: B) -> Vec3 {
+        let min: f64 = min.into();
+        let max: f64 = max.into();
+
+        Vec3::new(
+            random_f64() * (max - min) + min,
+            random_f64() * (max - min) + min,
+            random_f64() * (max - min) + min,
+        )
+    }
+
+    pub fn random_unit_vec() -> Vec3 {
+        loop {
+            let point_in_unit_cube = Vec3::random_range(-1, 1);
+            let magnitude = point_in_unit_cube.length_squared();
+            let unit_sphere_radius = 1.;
+
+            // 1e-160 is smallest we can get without running risk of 1/0 division
+            // when normalising
+            if surrounds(1e-160, magnitude, unit_sphere_radius) {
+                return point_in_unit_cube / magnitude.sqrt();
+            }
+        }
+    }
+
+    pub fn random_unit_vec_on_hemisphere(surface_normal: &Vec3) -> Vec3 {
+        let on_unit_sphere = Vec3::random_unit_vec();
+
+        // if surface normal in same direction then unit vec is pointing
+        // out of sphere
+        // else invert it
+        if Vec3::dot(&on_unit_sphere, surface_normal) > 0. {
+            on_unit_sphere
+        } else {
+            -on_unit_sphere
+        }
     }
 
     pub fn x(&self) -> &f64 {
@@ -27,9 +97,9 @@ impl Vec3 {
     }
 
     pub fn get_color_256(&self) -> String {
-        let r = (256. * clamp(0, *self.x(), 0.999)).floor();
-        let g = (256. * clamp(0, *self.y(), 0.999)).floor();
-        let b = (256. * clamp(0, *self.z(), 0.999)).floor();
+        let r = (256. * clamp(0, Vec3::linear_to_gamma(*self.x()), 0.999)).floor();
+        let g = (256. * clamp(0, Vec3::linear_to_gamma(*self.y()), 0.999)).floor();
+        let b = (256. * clamp(0, Vec3::linear_to_gamma(*self.z()), 0.999)).floor();
 
         format!("{r} {g} {b}")
     }

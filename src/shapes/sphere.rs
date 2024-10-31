@@ -1,16 +1,22 @@
-use crate::hit::{Hittable, HitRecord};
-use crate::Vec3;
-use crate::Ray;
+use std::rc::Rc;
+
+use crate::{
+    hit::{HitRecord, Hittable},
+    Ray,
+    Vec3,
+    material::Material,
+};
 
 type Point3 = Vec3;
 
 pub struct Sphere {
     pub center: Point3,
     pub radius: f64,
+    material: Rc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new<T: Into<f64>>(center: Point3, radius: T) -> Sphere {
+    pub fn new<T: Into<f64>>(center: Point3, radius: T, material: Rc<dyn Material>) -> Sphere {
         let mut r = radius.into();
         if r < 0. {
             r = 0.
@@ -19,6 +25,7 @@ impl Sphere {
         Sphere {
             center,
             radius: r,
+            material,
         }
     }
 }
@@ -59,6 +66,6 @@ impl Hittable for Sphere {
         let point = r.at(root);
         let normal = (point - self.center) / self.radius;
 
-        Some(HitRecord::new(point, normal, t, r))
+        Some(HitRecord::new(point, normal, t, r, self.material.clone()))
     }
 }

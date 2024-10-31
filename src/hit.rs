@@ -1,6 +1,10 @@
 use std::vec::Vec;
 use std::rc::Rc;
-use crate::{Ray, Vec3};
+use crate::{
+    Ray,
+    Vec3,
+    material::Material,
+};
 
 type Point3 = Vec3;
 
@@ -13,6 +17,7 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
+    pub material: Rc<dyn Material>,
 }
 
 pub struct HittableList {
@@ -64,13 +69,14 @@ impl Default for HittableList {
 impl HitRecord {
     /// r is the ray that hit the surface
     /// This function will check if the ray hit inside or outside of surface
-    pub fn new(point: Point3, normal: Vec3, t: f64, r: &Ray) -> HitRecord {
+    pub fn new(point: Point3, normal: Vec3, t: f64, r: &Ray, material: Rc<dyn Material>) -> HitRecord {
         let mut res = HitRecord {
             point,
             normal,
             t,
             // default value to allow function creation
             front_face: false,
+            material,
         };
 
         res.set_face_normal(r, &normal);

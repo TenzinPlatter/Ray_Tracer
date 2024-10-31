@@ -1,11 +1,6 @@
-use crate::{
-    Vec3,
-    Hittable,
-    INFINITY,
-};
+use crate::Vec3;
 
 type Point3 = Vec3;
-type Color = Vec3;
 
 pub struct Ray {
     pub origin: Point3,

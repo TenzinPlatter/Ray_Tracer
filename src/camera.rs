@@ -17,6 +17,7 @@ pub struct Camera {
     pub image_width: u32,
     pub center: Point3,
     pub samples_per_pixel: u32,
+    pub max_ray_bounce_depth: u32,
     image_height: u32,
     px00_loc: Point3,
     pixel_delta_u: Vec3,
@@ -37,6 +38,7 @@ impl Default for Camera {
             pixel_delta_u: Vec3::new(0, 0, 0),
             pixel_delta_v: Vec3::new(0, 0, 0),
             pixel_samples_scale: 0.,
+            max_ray_bounce_depth: 10,
         }
     }
 }
@@ -142,7 +144,12 @@ impl Camera {
                 // be scaled down
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
-                    pixel_color += ray_color(&r, world, &background_func);
+                    pixel_color += ray_color(
+                        &r,
+                        world,
+                        self.max_ray_bounce_depth,
+                        &background_func
+                        );
                 }
 
                 pixel_color *= self.pixel_samples_scale as f64;
@@ -160,17 +167,29 @@ impl Camera {
 fn ray_color(
     r: &Ray,
     world: &dyn Hittable,
+    depth: u32,
     background_func: &dyn Fn(&Ray) -> Color
 )
-    -> Color {
-        // if ray collides with an object in hittable world, return color
-        match world.hit(r, 0., INFINITY) {
-            None => (),
-            Some(rec) => {
-                return (rec.normal + Color::new(1, 1, 1)) * 0.5;
-            }
+    -> Color
+{
+        // if max bounces reached collect no more color
+        // depth cannot accidentally be less than 0 as it is u32
+        if depth == 0 {
+            return Color::new(0, 0, 0);
         }
 
-        // else return background
+        // if ray collides with an object in hittable world, return color
+        if let Some(rec) = world.hit(r, 0.001, INFINITY) {
+            // // Basic diffuse
+            // let direction = Vec3::random_unit_vec_on_hemisphere(&rec.normal);
+            // // Lambertian diffuse
+            // let direction = rec.normal + Vec3::random_unit_vec();
+
+            let (scattered, attenuation) = (*rec.material).scatter(r, &rec);
+
+            return ray_color(&scattered, world, depth - 1, background_func)
+                * attenuation;
+        }
+
         background_func(r)
     }

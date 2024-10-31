@@ -3,6 +3,7 @@ pub mod ray;
 pub mod scene;
 pub mod hit;
 pub mod camera;
+pub mod material;
 pub mod shapes {
     pub mod sphere;
 }
@@ -12,8 +13,7 @@ use rand::random;
 
 use vec3::Vec3;
 use ray::Ray;
-use hit::{Hittable, HittableList};
-use shapes::sphere::Sphere;
+use hit::Hittable;
 
 type Point3 = Vec3;
 type Color = Vec3;
@@ -26,6 +26,7 @@ pub fn random_f64() -> f64 {
     random()
 }
 
+/// Checks if x is between min and max
 pub fn surrounds<A: Into<f64>, B: Into<f64>, C: Into<f64>>(min: A, x: B, max: C) -> bool {
     let x = x.into();
     let min = min.into();
@@ -34,6 +35,7 @@ pub fn surrounds<A: Into<f64>, B: Into<f64>, C: Into<f64>>(min: A, x: B, max: C)
     min < x && x < max
 }
 
+/// Clamps the value x between min and max
 pub fn clamp<A: Into<f64>, B: Into<f64>, C: Into<f64>>(min: A, x: B, max: C) -> f64 {
     let x = x.into();
     let min = min.into();
