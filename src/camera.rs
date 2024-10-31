@@ -31,7 +31,7 @@ impl Default for Camera {
         Camera {
             image_width: 100,
             image_height: 0,
-            aspect_ratio: 16. / 9.,
+            aspect_ratio: 43. / 18.,
             samples_per_pixel: 10,
             center: Point3::new(0, 0, 0),
             px00_loc: Point3::new(0, 0, 0),
@@ -180,15 +180,13 @@ fn ray_color(
 
         // if ray collides with an object in hittable world, return color
         if let Some(rec) = world.hit(r, 0.001, INFINITY) {
-            // // Basic diffuse
-            // let direction = Vec3::random_unit_vec_on_hemisphere(&rec.normal);
-            // // Lambertian diffuse
-            // let direction = rec.normal + Vec3::random_unit_vec();
 
-            let (scattered, attenuation) = (*rec.material).scatter(r, &rec);
-
-            return ray_color(&scattered, world, depth - 1, background_func)
-                * attenuation;
+            if let Some((scattered, attenuation)) = (*rec.material).scatter(r, &rec) {
+                return ray_color(&scattered, world, depth - 1, background_func)
+                    * attenuation;
+            } else {
+                return Color::new(0, 0, 0);
+            }
         }
 
         background_func(r)

@@ -1,14 +1,11 @@
 use std::{
     env,
     rc::Rc,
+    time::Instant,
 };
 
 use ray_tracer::{
-    hit::HittableList,
-    vec3::Vec3,
-    camera::Camera,
-    shapes::sphere::Sphere,
-    material::{Lambertian, Metal},
+    camera::Camera, hit::HittableList, material::{Dielectric, Lambertian, Metal}, shapes::sphere::Sphere, vec3::Vec3
 };
 
 type Point3 = Vec3;
@@ -20,7 +17,7 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
 
-    let mut width: u32 = 1920;
+    let mut width: u32 = 400;
     let mut image_path = String::from("./imgs/image.ppm");
 
     (1..args.len()).for_each(|i| {
@@ -37,16 +34,27 @@ fn main() {
     camera.max_ray_bounce_depth = 50;
 
     let mut world = HittableList::new();
-    let material_ground = Rc::from(Lambertian::new(Color::new(0.8, 0.8, 0)));
-    let material_center = Rc::from(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
-    let material_left = Rc::from(Metal::new(Color::new(0.8, 0.8, 0.8)));
-    let material_right = Rc::from(Metal::new(Color::new(0.8, 0.6, 0.2)));
+    let ground = Rc::from(Lambertian::new(Color::new(0.8, 0.8, 0)));
+    let blue_solid = Rc::from(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
+    let _material_left = Rc::from(Metal::new(Color::new(0.8, 0.33, 0.), 0.3));
+    let colored_metal = Rc::from(Metal::new(Color::new(0.8, 0.6, 0.2), 1.));
+    let _shiny_metal = Rc::from(Metal::new(Color::new(1, 1, 1), 0.1));
+    let glass = Rc::from(Dielectric::new(1. / 1.33));
+    let glass_to_air = Rc::from(Dielectric::new(1. / 1.5));
 
-    world.add( Rc::from(
+    // world.add(Rc::from(
+    //         Sphere::new(
+    //             Point3::new(-1, 0, -1),
+    //             0.4,
+    //             glass_to_air.clone(),
+    //             )
+    //         ));
+
+    world.add(Rc::from(
             Sphere::new(
                 Point3::new(0, 0, -1.2),
                 0.5,
-                material_center.clone(),
+                blue_solid.clone(),
                 )
             ));
 
@@ -54,7 +62,7 @@ fn main() {
             Sphere::new(
                 Point3::new(0, -100.5, -1),
                 100,
-                material_ground.clone(),
+                ground.clone(),
                 )
             ));
 
@@ -62,7 +70,7 @@ fn main() {
             Sphere::new(
                 Point3::new(-1, 0, -1),
                 0.5,
-                material_left.clone(),
+                glass.clone(),
                 )
             ));
 
@@ -70,9 +78,13 @@ fn main() {
             Sphere::new(
                 Point3::new(1, 0, -1),
                 0.5,
-                material_right.clone(),
+                colored_metal.clone(),
                 )
             ));
 
+    let time_started = Instant::now();
+
     camera.render(&world, &image_path);
+
+    println!("Render took {} secs", time_started.elapsed().as_secs());
 }

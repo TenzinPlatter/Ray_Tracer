@@ -18,8 +18,22 @@ impl Vec3 {
         Vec3 { e: [x.into(), y.into(), z.into()] }
     }
 
-    pub fn reflect(&self, surface_normal: &Vec3) -> Vec3 {
-        *self - *surface_normal * 2. * Vec3::dot(self, surface_normal)
+    pub fn refract(uv: Vec3, surface_normal: Vec3, etai_over_etat: f64) -> Vec3 {
+        let cos_theta = f64::min(Vec3::dot(&-uv, &surface_normal), 1.);
+
+        // component of refracted vec perpendicular to surface normal
+        let r_out_perpendicular = (uv + (surface_normal * cos_theta))
+            * etai_over_etat;
+
+        // component of refracted vec parallel to surface normal
+        let r_out_parallel = surface_normal
+            * -((1.0 - r_out_perpendicular.length_squared()).abs().sqrt());
+
+        r_out_perpendicular + r_out_parallel
+    }
+
+    pub fn reflect(uv: &Vec3, surface_normal: &Vec3) -> Vec3 {
+        *uv - *surface_normal * 2. * Vec3::dot(uv, surface_normal)
     }
 
     pub fn near_zero(&self) -> bool {
