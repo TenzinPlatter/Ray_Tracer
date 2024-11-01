@@ -1,15 +1,15 @@
 use std::{
     env,
-    rc::Rc,
     time::Instant,
 };
 
 use ray_tracer::{
-    camera::Camera, hit::HittableList, material::{Dielectric, Lambertian, Metal}, shapes::sphere::Sphere, vec3::Vec3
+    camera::Camera,
+    generate_world,
+    vec3::Vec3,
 };
 
 type Point3 = Vec3;
-type Color = Vec3;
 
 fn main() {
     // setup logger
@@ -29,58 +29,18 @@ fn main() {
     });
 
     let mut camera = Camera::default();
-    camera.image_width = width;
-    camera.samples_per_pixel = 100;
+    camera.image_width = 1920;
+    camera.samples_per_pixel = 500;
     camera.max_ray_bounce_depth = 50;
+    camera.aspect_ratio = 16. / 9.;
 
-    let mut world = HittableList::new();
-    let ground = Rc::from(Lambertian::new(Color::new(0.8, 0.8, 0)));
-    let blue_solid = Rc::from(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
-    let _material_left = Rc::from(Metal::new(Color::new(0.8, 0.33, 0.), 0.3));
-    let colored_metal = Rc::from(Metal::new(Color::new(0.8, 0.6, 0.2), 1.));
-    let _shiny_metal = Rc::from(Metal::new(Color::new(1, 1, 1), 0.1));
-    let glass = Rc::from(Dielectric::new(1. / 1.33));
-    let glass_to_air = Rc::from(Dielectric::new(1. / 1.5));
+    camera.look_from = Point3::new(13, 2, 3);
+    camera.look_at = Point3::new(0, 0, 0);
 
-    // world.add(Rc::from(
-    //         Sphere::new(
-    //             Point3::new(-1, 0, -1),
-    //             0.4,
-    //             glass_to_air.clone(),
-    //             )
-    //         ));
+    camera.defocus_angle = 0.6;
+    camera.focus_dist = 10.;
 
-    world.add(Rc::from(
-            Sphere::new(
-                Point3::new(0, 0, -1.2),
-                0.5,
-                blue_solid.clone(),
-                )
-            ));
-
-    world.add(Rc::from(
-            Sphere::new(
-                Point3::new(0, -100.5, -1),
-                100,
-                ground.clone(),
-                )
-            ));
-
-    world.add(Rc::from(
-            Sphere::new(
-                Point3::new(-1, 0, -1),
-                0.5,
-                glass.clone(),
-                )
-            ));
-
-    world.add(Rc::from(
-            Sphere::new(
-                Point3::new(1, 0, -1),
-                0.5,
-                colored_metal.clone(),
-                )
-            ));
+    let world = generate_world();
 
     let time_started = Instant::now();
 

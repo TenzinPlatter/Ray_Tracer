@@ -1,9 +1,7 @@
 use std::ops;
 
 use crate::{
-    clamp,
-    random_f64,
-    surrounds,
+    clamp, random_f64, random_range_f64, surrounds
 };
 
 #[derive(Copy)]
@@ -11,11 +9,31 @@ pub struct Vec3 {
     e: [f64; 3],
 }
 
+impl Default for Vec3 {
+    fn default() -> Self {
+        Vec3::new(0, 0, 0)
+    }
+}
+
 impl Vec3 {
     pub fn new
         <A: Into<f64>, B: Into<f64>, C: Into<f64>>
         (x: A, y: B, z: C) -> Vec3 {
         Vec3 { e: [x.into(), y.into(), z.into()] }
+    }
+
+    pub fn random_in_unit_disk() -> Vec3 {
+        loop {
+            let p = Vec3::new(
+                    random_range_f64(-1, 1),
+                    random_range_f64(-1, 1),
+                    0
+                );
+
+                if p.length_squared() < 1. {
+                    return p
+                }
+        }
     }
 
     pub fn refract(uv: Vec3, surface_normal: Vec3, etai_over_etat: f64) -> Vec3 {

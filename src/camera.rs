@@ -2,14 +2,7 @@ use indicatif::ProgressBar;
 use std::fs;
 
 use crate::{
-    Hittable,
-    Ray,
-    Vec3,
-    Color,
-    Point3,
-    INFINITY,
-    create_lerp_func,
-    random_f64,
+    create_lerp_func, degrees_to_radians, random_f64, Color, Hittable, Point3, Ray, Vec3, INFINITY
 };
 
 pub struct Camera {
@@ -18,11 +11,22 @@ pub struct Camera {
     pub center: Point3,
     pub samples_per_pixel: u32,
     pub max_ray_bounce_depth: u32,
+    pub vfov: u32,
+    pub vup: Vec3,
+    pub look_from: Point3,
+    pub look_at: Point3,
+    pub defocus_angle: f64,
+    pub focus_dist: f64,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
     image_height: u32,
     px00_loc: Point3,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
     pixel_samples_scale: f32,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
 }
 
 impl Default for Camera {
@@ -31,6 +35,10 @@ impl Default for Camera {
         Camera {
             image_width: 100,
             image_height: 0,
+            vfov: 90,
+            vup: Vec3::new(0, 1, 0),
+            look_from: Point3::new(0, 0, 0),
+            look_at: Point3::new(0, 0, -1),
             aspect_ratio: 43. / 18.,
             samples_per_pixel: 10,
             center: Point3::new(0, 0, 0),
@@ -39,6 +47,13 @@ impl Default for Camera {
             pixel_delta_v: Vec3::new(0, 0, 0),
             pixel_samples_scale: 0.,
             max_ray_bounce_depth: 10,
+            u: Vec3::default(),
+            v: Vec3::default(),
+            w: Vec3::default(),
+            defocus_angle: 0.,
+            focus_dist: 10.,
+            defocus_disk_u: Vec3::default(),
+            defocus_disk_v: Vec3::default(),
         }
     }
 }
@@ -54,20 +69,33 @@ impl Camera {
 
     }
 
+    fn defocus_disk_sample(&self) -> Point3 {
+        let p = Vec3::random_in_unit_disk();
+        self.center + (self.defocus_disk_u * p[0]) + (self.defocus_disk_v * p[1])
+    }
+
     fn get_ray(&self, i: u32, j: u32) -> Ray {
+
         let offset = Camera::sample_square();
 
         let pixel_sample = self.px00_loc
             + self.pixel_delta_u * (i as f64 + offset.x())
             + self.pixel_delta_v * (j as f64 + offset.y());
 
-        let ray_origin = self.center;
+        let ray_origin = if self.defocus_angle <= 0. {
+            self.center
+        } else {
+            self.defocus_disk_sample()
+        };
+
         let ray_dir = pixel_sample - ray_origin;
 
         Ray::new(ray_origin, ray_dir)
     }
     
     pub fn initialize(&mut self) {
+        self.center = self.look_from;
+
         let image_width = self.image_width;
         let aspect_ratio = self.aspect_ratio;
         let camera_center = self.center;
@@ -79,19 +107,22 @@ impl Camera {
             image_height = 1
         }
 
-        // viewport height is at least 1px + 1/2px * for inset
-        let viewport_height = 2.;
-
         // height calculated from width/height rather than aspect ratio as ratio
         // is an ideal not actual
-        let viewport_width: f64 = viewport_height * (image_width as f64 / image_height as f64);
+        let actual_aspect_ratio: f64 = image_width as f64 / image_height as f64;
 
-        // distance between camera and viewport on z axis
-        // from camera towards viewport is -z
-        let focal_length = 1.;
+        let theta = degrees_to_radians(self.vfov as f64);
+        let h = f64::tan(theta / 2.);
+        let viewport_height = 2. * h * self.focus_dist;
+        let viewport_width = viewport_height * actual_aspect_ratio;
 
-        let viewport_u = Vec3::new(viewport_width, 0., 0.);
-        let viewport_v = Vec3::new(0., -viewport_height, 0.);
+        self.w = (self.look_from - self.look_at).unit_vector();
+        self.u = (Vec3::cross(&self.vup, &self.w)).unit_vector();
+        self.v = Vec3::cross(&self.w, &self.u);
+
+        let viewport_u = self.u * viewport_width;
+        // invert as real y and internal y coords are opposites
+        let viewport_v = -self.v * viewport_height;
 
         // u -> x distance between pixels on viewport
         // v -> y distance between pixels on viewport
@@ -100,7 +131,7 @@ impl Camera {
 
         // don't really get why this does what it does
         let viewport_upper_left = camera_center
-            - Vec3::new(0., 0., focal_length)
+            - self.w * self.focus_dist
             - viewport_u/2.
             - viewport_v/2.;
 
@@ -110,6 +141,10 @@ impl Camera {
         let pixel00_loc = viewport_upper_left
             + (pixel_delta_u + pixel_delta_v) * 0.5;
 
+        let defocus_radius = self.focus_dist
+            * f64::tan(degrees_to_radians(self.defocus_angle / 2.));
+        self.defocus_disk_u = self.u * defocus_radius;
+        self.defocus_disk_v = self.v * defocus_radius;
 
         self.image_height = image_height as u32;
         self.px00_loc = pixel00_loc;
