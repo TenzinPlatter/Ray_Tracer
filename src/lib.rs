@@ -4,6 +4,7 @@ pub mod scene;
 pub mod hit;
 pub mod camera;
 pub mod material;
+pub mod pool;
 pub mod shapes {
     pub mod sphere;
 }
