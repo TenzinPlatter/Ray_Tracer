@@ -4,12 +4,11 @@ use std::sync::{mpsc, Arc, Mutex};
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 struct Worker {
-    id: i32,
     thread: Option<JoinHandle<()>>,
 }
 
 impl Worker {
-    pub fn new(id: i32, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+    pub fn new(receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || {
             loop {
                 let message = receiver.lock().unwrap().recv();
@@ -26,7 +25,6 @@ impl Worker {
         });
 
         Worker {
-            id,
             thread: Some(thread),
         }
     }
@@ -57,8 +55,8 @@ impl ThreadPool {
 
         let receiver = Arc::new(Mutex::new(receiver));
 
-        for id in 0..size {
-            workers.push(Worker::new(id as i32, receiver.clone()));
+        for _ in 0..size {
+            workers.push(Worker::new(receiver.clone()));
         }
 
         ThreadPool {

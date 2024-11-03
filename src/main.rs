@@ -1,12 +1,10 @@
 use std::{
     env,
     time::Instant,
-    rc::Rc,
 };
 
 use ray_tracer::{
-    camera::Camera, generate_world, hit::HittableList, material::Dielectric, vec3::Vec3,
-    shapes::sphere::Sphere,
+    camera::Camera, generate_world, vec3::Vec3,
 };
 
 type Point3 = Vec3;
@@ -40,13 +38,7 @@ fn main() {
     camera.defocus_angle = 0.6;
     camera.focus_dist = 10.;
 
-    let glass = Rc::from(Dielectric::new(1.5));
-
-    // let world = generate_world();
-    let mut world = HittableList::new();
-    world.add(Rc::from(Sphere::new(
-                Point3::new(1, 1, -1), 4, glass
-    )));
+    let world = generate_world();
 
     let time_started = Instant::now();
 

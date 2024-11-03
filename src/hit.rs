@@ -8,7 +8,7 @@ use crate::{
 
 type Point3 = Vec3;
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, ray_tmin: f64, ray_tmax: f64) -> Option<HitRecord>;
 }
 

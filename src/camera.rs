@@ -1,8 +1,19 @@
 use indicatif::ProgressBar;
-use std::fs;
+use std::borrow::BorrowMut;
+use std::sync::{Arc, Mutex};
+use std::{fs, cell::RefCell};
 
 use crate::{
-    create_lerp_func, degrees_to_radians, random_f64, Color, Hittable, Point3, Ray, Vec3, INFINITY
+    create_lerp_func,
+    degrees_to_radians,
+    pool::ThreadPool,
+    random_f64,
+    Color,
+    Hittable,
+    Point3,
+    Ray,
+    Vec3,
+    INFINITY
 };
 
 pub struct Camera {
@@ -156,54 +167,85 @@ impl Camera {
     pub fn render(&mut self, world: &dyn Hittable, image_path: &str) {
         self.initialize();
 
-        let mut res = String::new();
-
-        res.push_str(&format!("P3\n{} {}\n255\n", self.image_width, self.image_height));
-
         println!("Generating {} by {} image...", self.image_width, self.image_height);
         let bar = ProgressBar::new((self.image_width * self.image_height) as u64);
 
         log::info!("Scanlines remaining: ");
 
-        let background_func = create_lerp_func(
-            Color::new(1, 1, 1),
-            Color::new(0, 0.5, 0.7)
-        );
+        let pool = ThreadPool::new(10);
+        let mut pixel_colors = Arc::new(Mutex::new(
+                vec![String::new(); (self.image_height * self.image_width) as usize]
+                ));
 
-        for j in 0..self.image_height {
-            for i in 0..self.image_width {
+        let world: Arc<&dyn Hittable> = Arc::new(world);
+        let image_width = Arc::new(self.image_width);
+        let cam_arc = Arc::new(&mut *self);
+
+        for y in 0..cam_arc.image_height {
+            for x in 0..cam_arc.image_width {
                 bar.inc(1);
-                let mut pixel_color = Color::new(0, 0, 0);
 
-                // color will become total sum of all samples and then
-                // be scaled down
-                for _sample in 0..self.samples_per_pixel {
-                    let r = self.get_ray(i, j);
-                    pixel_color += ray_color(
-                        &r,
-                        world,
-                        self.max_ray_bounce_depth,
-                        &background_func
-                        );
-                }
+                let world = Arc::clone(&world);
+                let pixel_colors: Arc<Mutex<Vec<String>>> = Arc::clone(&pixel_colors);
+                let i: u32 = x.clone();
+                let j: u32 = y.clone();
+                let image_width = Arc::clone(&image_width);
+                let cam = cam_arc.clone();
 
-                pixel_color *= self.pixel_samples_scale as f64;
-                res.push_str(&(pixel_color.get_color_256() + "\n"))
+                pool.execute(move || {
+                    let color = get_pixel_color(cam, i, j, world);
+                    let mut colors_array = pixel_colors.lock().unwrap();
+                    let idx: usize = (j * *image_width + i).try_into().unwrap();
+
+                    colors_array[idx] = color.get_color_256();
+                });
             }
         }
 
         log::info!("\rDone.                     \r");
         bar.finish();
 
+        let mut res = String::new();
+
+        res.push_str(&format!("P3\n{} {}\n255\n", cam_arc.image_width, cam_arc.image_height));
+
+        for color in pixel_colors.lock().unwrap().iter() {
+            res.push_str(&(color.to_owned() + "\n"));
+        }
+
         fs::write(image_path, res).expect("Unable to write to file");
     }
 }
 
+fn get_pixel_color(
+    cam: Arc<&mut Camera>,
+    x: u32,
+    y: u32,
+    world: Arc<&dyn Hittable>
+    ) -> Color {
+
+    let mut pixel_color = Color::new(0, 0, 0);
+
+    // color will become total sum of all samples and then
+    // be scaled down
+    for _sample in 0..cam.samples_per_pixel {
+        let r = cam.get_ray(x, y);
+        pixel_color += ray_color(
+            &r,
+            &world,
+            cam.max_ray_bounce_depth,
+        );
+    }
+
+    pixel_color *= cam.pixel_samples_scale as f64;
+
+    pixel_color
+}
+
 fn ray_color(
     r: &Ray,
-    world: &dyn Hittable,
+    world: &Arc<&dyn Hittable>,
     depth: u32,
-    background_func: &dyn Fn(&Ray) -> Color
 )
     -> Color
 {
@@ -217,12 +259,17 @@ fn ray_color(
         if let Some(rec) = world.hit(r, 0.001, INFINITY) {
 
             if let Some((scattered, attenuation)) = (*rec.material).scatter(r, &rec) {
-                return ray_color(&scattered, world, depth - 1, background_func)
+                return ray_color(&scattered, world, depth - 1)
                     * attenuation;
             } else {
                 return Color::new(0, 0, 0);
             }
         }
 
-        background_func(r)
+        let start_color = Color::new(1, 1, 1);
+        let end_color = Color::new(1, 0.5, 0.7);
+
+        let unit_direction = r.direction.unit_vector();
+        let a = (unit_direction.y() + 1.) * 0.5;
+        start_color * (1. - a) + end_color * a
     }
