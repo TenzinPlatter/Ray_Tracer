@@ -1,5 +1,4 @@
 use indicatif::ProgressBar;
-use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
 use std::{fs, cell::RefCell};
 
